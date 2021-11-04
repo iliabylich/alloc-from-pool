@@ -1,63 +1,40 @@
-use crate::{PoolValue, Slot};
+use crate::{Factory, InnerPool, PoolValue};
 
-#[derive(Debug)]
 pub struct Pool<T: 'static> {
-    slots: Vec<Slot<T>>,
-    #[cfg(test)]
-    allocations: usize,
-}
-
-impl<T> Default for Pool<T> {
-    fn default() -> Self {
-        Self {
-            slots: vec![],
-            #[cfg(test)]
-            allocations: 0,
-        }
-    }
+    inner: *mut InnerPool<T>,
 }
 
 impl<T> Pool<T> {
     pub fn new() -> Self {
-        Self::default()
+        let inner = Box::leak(Box::new(InnerPool::new()));
+        Self { inner }
     }
 
-    #[allow(mutable_transmutes)]
-    #[allow(clippy::mut_from_ref)]
-    fn as_mut(&self) -> &'static mut Self {
-        unsafe { std::mem::transmute(self) }
+    fn inner_ref(&self) -> &InnerPool<T> {
+        unsafe { self.inner.as_ref().unwrap() }
     }
 
     pub fn alloc(&self, value: T) -> PoolValue<T> {
-        let mut slot = self.find_slot();
-        *slot.value_mut() = Some(value);
-        PoolValue::new(slot)
+        self.inner_ref().alloc(value)
     }
 
-    fn find_slot(&self) -> Slot<T> {
-        if let Some(slot) = self.as_mut().slots.pop() {
-            slot
-        } else {
-            #[cfg(test)]
-            {
-                self.as_mut().allocations += 1;
-            }
-            Slot::new_empty(self.as_mut())
-        }
-    }
-
-    pub(crate) fn recycle(&self, slot: Slot<T>) {
-        slot.clear_value();
-        self.as_mut().slots.push(slot);
+    pub fn factory(&self) -> Factory<T> {
+        Factory::new(self.inner)
     }
 
     #[cfg(test)]
     pub(crate) fn total_allocations(&self) -> usize {
-        self.allocations
+        self.inner_ref().total_allocations()
     }
 
     #[cfg(test)]
     pub(crate) fn size(&self) -> usize {
-        self.slots.len()
+        self.inner_ref().size()
+    }
+}
+
+impl<T> Drop for Pool<T> {
+    fn drop(&mut self) {
+        drop(unsafe { Box::from_raw(self.inner) })
     }
 }

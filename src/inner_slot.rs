@@ -1,13 +1,13 @@
-use crate::Pool;
+use crate::InnerPool;
 
 #[derive(Debug)]
 pub(crate) struct InnerSlot<T: 'static> {
     value: Option<T>,
-    pool: &'static Pool<T>,
+    pool: &'static InnerPool<T>,
 }
 
 impl<T> InnerSlot<T> {
-    pub(crate) fn new_empty(pool: &'static Pool<T>) -> *mut Self {
+    pub(crate) fn new_empty(pool: &'static InnerPool<T>) -> *mut Self {
         Box::leak(Box::new(Self { value: None, pool }))
     }
 
@@ -17,7 +17,7 @@ impl<T> InnerSlot<T> {
         unsafe { std::mem::transmute(self) }
     }
 
-    pub(crate) fn pool(&self) -> &'static Pool<T> {
+    pub(crate) fn pool(&self) -> &'static InnerPool<T> {
         self.pool
     }
 

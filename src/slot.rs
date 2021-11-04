@@ -1,4 +1,4 @@
-use crate::{InnerSlot, Pool};
+use crate::{InnerPool, InnerSlot};
 
 #[derive(Debug)]
 pub(crate) struct Slot<T: 'static> {
@@ -12,7 +12,7 @@ impl<T> Clone for Slot<T> {
 }
 
 impl<T> Slot<T> {
-    pub(crate) fn new_empty(pool: &'static Pool<T>) -> Self {
+    pub(crate) fn new_empty(pool: &'static InnerPool<T>) -> Self {
         Self {
             inner: InnerSlot::new_empty(pool),
         }
@@ -22,7 +22,7 @@ impl<T> Slot<T> {
         unsafe { self.inner.as_mut().unwrap() }
     }
 
-    fn pool(&self) -> &'static Pool<T> {
+    fn pool(&self) -> &'static InnerPool<T> {
         self.inner_ref().pool()
     }
 

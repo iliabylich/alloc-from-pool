@@ -22,4 +22,12 @@ drop(foo1);
 let foo2 = pool.alloc(Foo([2; 50]));
 // returns memory back to pool
 drop(foo2);
+
+// it also possible to create a Factory based on a pool
+// that holds a reference to initial Pool
+let factory = pool.factory();
+// Factory has the same `alloc` method:
+let foo3 = factory.alloc(Foo([3; 50]));
+// it uses the same pool, and also returns back to the same pool
+drop(foo3);
 ```
