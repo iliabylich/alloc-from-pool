@@ -1,9 +1,17 @@
 use crate::Slot;
 use std::ops::{Deref, DerefMut};
 
-#[derive(Debug)]
 pub struct PoolValue<T: 'static> {
     slot: Slot<T>,
+}
+
+impl<T> Clone for PoolValue<T>
+where
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        self.slot.pool().alloc(self.slot.value().clone().unwrap())
+    }
 }
 
 impl<T> PoolValue<T> {
@@ -11,12 +19,12 @@ impl<T> PoolValue<T> {
         Self { slot }
     }
 
-    pub fn to_value(&self) -> T {
-        self.slot.to_value()
+    pub fn take_value(&self) -> T {
+        self.slot.take_value()
     }
 
-    pub fn to_boxed_value(&self) -> Box<T> {
-        Box::new(self.to_value())
+    pub fn take_boxed_value(&self) -> Box<T> {
+        Box::new(self.take_value())
     }
 }
 
@@ -64,5 +72,14 @@ where
 impl<T> Drop for PoolValue<T> {
     fn drop(&mut self) {
         self.slot.take().recycle()
+    }
+}
+
+impl<T> std::fmt::Debug for PoolValue<T>
+where
+    T: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.deref())
     }
 }

@@ -25,7 +25,7 @@ impl<T> InnerSlot<T> {
         self.as_mut().value = None;
     }
 
-    pub(crate) fn to_value(&self) -> T {
+    pub(crate) fn take_value(&self) -> T {
         self.as_mut().value.take().unwrap()
     }
 

@@ -1,5 +1,6 @@
 use crate::{Factory, InnerPool, PoolValue};
 
+#[derive(Debug)]
 pub struct Pool<T: 'static> {
     inner: *mut InnerPool<T>,
 }

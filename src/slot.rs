@@ -5,12 +5,6 @@ pub(crate) struct Slot<T: 'static> {
     inner: *mut InnerSlot<T>,
 }
 
-impl<T> Clone for Slot<T> {
-    fn clone(&self) -> Self {
-        Self { inner: self.inner }
-    }
-}
-
 impl<T> Slot<T> {
     pub(crate) fn new_empty(pool: &'static InnerPool<T>) -> Self {
         Self {
@@ -22,12 +16,12 @@ impl<T> Slot<T> {
         unsafe { self.inner.as_mut().unwrap() }
     }
 
-    fn pool(&self) -> &'static InnerPool<T> {
+    pub(crate) fn pool(&self) -> &'static InnerPool<T> {
         self.inner_ref().pool()
     }
 
     pub(crate) fn take(&mut self) -> Self {
-        let slot = self.clone();
+        let slot = Self { inner: self.inner };
         self.inner = std::ptr::null_mut();
         slot
     }
@@ -48,8 +42,8 @@ impl<T> Slot<T> {
         self.inner_ref().value_mut()
     }
 
-    pub(crate) fn to_value(&self) -> T {
-        self.inner_ref().to_value()
+    pub(crate) fn take_value(&self) -> T {
+        self.inner_ref().take_value()
     }
 }
 
