@@ -31,3 +31,12 @@ let foo3 = factory.alloc(Foo([3; 50]));
 // it uses the same pool, and also returns back to the same pool
 drop(foo3);
 ```
+
+### Benchmarks
+
+You can run `cargo bench`:
+
+```text
+test alloc_with_box  ... bench:          56 ns/iter (+/- 6)
+test alloc_with_pool ... bench:           7 ns/iter (+/- 0)
+```

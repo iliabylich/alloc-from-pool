@@ -1,5 +1,9 @@
 use alloc_from_pool::Pool;
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+
+#[macro_use]
+extern crate bencher;
+
+use bencher::Bencher;
 
 #[allow(dead_code)]
 struct Dummy {
@@ -14,31 +18,31 @@ impl Dummy {
     }
 }
 
-#[inline(never)]
-fn alloc_with_pool(pool: &Pool<Dummy>, i: u64) {
-    let pooled = pool.alloc(Dummy::new(i));
-    black_box(pooled);
-}
-
-#[inline(never)]
-fn alloc_every_time(_pool: &Pool<Dummy>, i: u64) {
-    let boxed = Box::new(Dummy::new(i));
-    black_box(boxed);
-}
-
-fn bench_impls(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Alloc");
-    let pool = Pool::new();
-    for i in [20u64, 21u64].iter() {
-        group.bench_with_input(BenchmarkId::new("With Pool", i), i, |b, i| {
-            b.iter(|| alloc_with_pool(&pool, *i))
-        });
-        group.bench_with_input(BenchmarkId::new("Every Time", i), i, |b, i| {
-            b.iter(|| alloc_every_time(&pool, *i))
-        });
+// Stolen from criterion :)
+fn black_box<T>(dummy: T) -> T {
+    unsafe {
+        let ret = std::ptr::read_volatile(&dummy);
+        std::mem::forget(dummy);
+        ret
     }
-    group.finish();
 }
 
-criterion_group!(benches, bench_impls);
-criterion_main!(benches);
+#[inline(never)]
+fn alloc_with_pool(bench: &mut Bencher) {
+    let pool = Pool::new();
+    bench.iter(|| {
+        let pooled = pool.alloc(Dummy::new(42));
+        black_box(pooled);
+    });
+}
+
+#[inline(never)]
+fn alloc_with_box(bench: &mut Bencher) {
+    bench.iter(|| {
+        let boxed = Box::new(Dummy::new(42));
+        black_box(boxed);
+    });
+}
+
+benchmark_group!(benches, alloc_with_pool, alloc_with_box);
+benchmark_main!(benches);
