@@ -1,5 +1,7 @@
 [package]
+description = "Single-threaded object pool implementation"
 edition = "2021"
+license = "MIT"
 name = "alloc-from-pool"
 version = "1.0.0"
 
