@@ -56,7 +56,7 @@ impl<T> Slot<T> {
 impl<T> Drop for Slot<T> {
     fn drop(&mut self) {
         if !self.inner.is_null() {
-            unsafe { std::ptr::drop_in_place(self.inner) }
+            drop(unsafe { Box::from_raw(self.inner) })
         }
     }
 }

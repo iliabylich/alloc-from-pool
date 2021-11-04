@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 mod inner_slot;
 mod pool;
 mod pool_value;
