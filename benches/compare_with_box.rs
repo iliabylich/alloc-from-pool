@@ -1,4 +1,4 @@
-use alloc_box_from_pool::Pool;
+use alloc_from_pool::Pool;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
 #[allow(dead_code)]
