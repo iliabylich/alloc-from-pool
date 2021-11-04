@@ -5,10 +5,16 @@ pub struct Pool<T: 'static> {
     inner: *mut InnerPool<T>,
 }
 
-impl<T> Pool<T> {
-    pub fn new() -> Self {
+impl<T> Default for Pool<T> {
+    fn default() -> Self {
         let inner = Box::leak(Box::new(InnerPool::new()));
         Self { inner }
+    }
+}
+
+impl<T> Pool<T> {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     fn inner_ref(&self) -> &InnerPool<T> {
