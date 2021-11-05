@@ -11,18 +11,38 @@ env:
 
 jobs:
   test:
-    name: test on ${{ matrix.build.rust }}
+    name: ${{ matrix.build.name }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         build:
-          - rust: stable
+          - name: test on stable
+            rust: stable
             run: cargo test
-          - rust: beta
+          - name: test on beta
+            rust: beta
             run: cargo test
-          - rust: nightly
+          - name: test on nightly with ASAN
+            rust: nightly
             run: ASAN_OPTIONS=detect_leaks=1 RUSTFLAGS="-Z sanitizer=address" cargo test
+
+          - name: run benchmarks
+            rust: nightly
+            run: cargo bench
+
+          - name: run miri
+            rust: nightly
+            run: |
+              # Install Miri
+              MIRI_NIGHTLY=nightly-$(curl -s https://rust-lang.github.io/rustup-components-history/x86_64-unknown-linux-gnu/miri)
+              echo "Installing latest nightly with Miri: $MIRI_NIGHTLY"
+              rustup set profile minimal
+              rustup override set "$MIRI_NIGHTLY"
+              rustup component add miri
+
+              MIRIFLAGS="-Zmiri-disable-stacked-borrows" cargo miri test
+
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -34,22 +54,5 @@ jobs:
           toolchain: ${{ matrix.build.rust }}
           override: true
 
-      - name: run tests
+      - name: ${{ matrix.build.name }}
         run: ${{ matrix.build.run }}
-
-  bench:
-    name: bench
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v2
-
-      - name: install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: true
-
-      - name: run benchmarks
-        run: cargo bench
