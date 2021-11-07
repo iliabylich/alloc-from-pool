@@ -83,3 +83,9 @@ where
         write!(f, "{:?}", self.deref())
     }
 }
+
+impl<T> AsRef<T> for PoolValue<T> {
+    fn as_ref(&self) -> &T {
+        self.slot.value().as_ref().unwrap()
+    }
+}
