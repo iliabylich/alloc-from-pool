@@ -28,13 +28,14 @@ impl<T> Pool<T> {
     pub fn factory(&self) -> Factory<T> {
         Factory::new(self.inner)
     }
+}
 
-    #[cfg(test)]
+#[cfg(test)]
+impl<T> Pool<T> {
     pub(crate) fn total_allocations(&self) -> usize {
         self.inner_ref().total_allocations()
     }
 
-    #[cfg(test)]
     pub(crate) fn size(&self) -> usize {
         self.inner_ref().size()
     }
