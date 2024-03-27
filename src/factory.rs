@@ -1,25 +1,26 @@
-use crate::{InnerPool, PoolValue};
+use std::cell::UnsafeCell;
+
+use crate::{alloc_in::alloc_in, allocations_ptr::allocations_ptr, PoolValue};
 
 #[derive(Debug)]
-pub struct Factory<T: 'static> {
-    inner: *mut InnerPool<T>,
+pub struct Factory<T> {
+    pub(crate) slots: *const UnsafeCell<Vec<Box<T>>>,
+    #[cfg(test)]
+    pub(crate) allocations: *mut usize,
+}
+
+impl<T> Factory<T> {
+    pub fn alloc(&self, value: T) -> PoolValue<T> {
+        alloc_in(self.slots, allocations_ptr!(self), value)
+    }
 }
 
 impl<T> Default for Factory<T> {
     fn default() -> Self {
         Self {
-            inner: std::ptr::null_mut(),
+            slots: std::ptr::null(),
+            #[cfg(test)]
+            allocations: std::ptr::null_mut(),
         }
-    }
-}
-
-impl<T> Factory<T> {
-    pub(crate) fn new(inner: *mut InnerPool<T>) -> Self {
-        Self { inner }
-    }
-
-    pub fn alloc(&self, value: T) -> PoolValue<T> {
-        let inner_ref = unsafe { self.inner.as_ref().unwrap() };
-        inner_ref.alloc(value)
     }
 }

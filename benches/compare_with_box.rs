@@ -1,33 +1,15 @@
 use alloc_from_pool::Pool;
+use bencher::{benchmark_group, benchmark_main, Bencher};
+use std::hint::black_box;
 
-#[macro_use]
-extern crate bencher;
-
-use bencher::Bencher;
-
-#[allow(dead_code)]
-struct Dummy {
-    bytes: [u8; 50],
-}
+struct Dummy(#[allow(dead_code)] [u8; 50]);
 
 impl Dummy {
     fn new(i: u64) -> Self {
-        Self {
-            bytes: [(i % 255) as u8; 50],
-        }
+        Self([(i % 255) as u8; 50])
     }
 }
 
-// Stolen from criterion :)
-fn black_box<T>(dummy: T) -> T {
-    unsafe {
-        let ret = std::ptr::read_volatile(&dummy);
-        std::mem::forget(dummy);
-        ret
-    }
-}
-
-#[inline(never)]
 fn alloc_with_pool(bench: &mut Bencher) {
     let pool = Pool::new();
     bench.iter(|| {
@@ -36,7 +18,6 @@ fn alloc_with_pool(bench: &mut Bencher) {
     });
 }
 
-#[inline(never)]
 fn alloc_with_box(bench: &mut Bencher) {
     bench.iter(|| {
         let boxed = Box::new(Dummy::new(42));

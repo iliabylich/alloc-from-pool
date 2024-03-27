@@ -1,30 +1,20 @@
-use crate::Slot;
-use std::ops::{Deref, DerefMut};
+use std::cell::UnsafeCell;
+use std::ops::Deref;
+
+use crate::{alloc_in::alloc_in, allocations_ptr::allocations_ptr};
 
 pub struct PoolValue<T: 'static> {
-    slot: Slot<T>,
-}
-
-impl<T> Clone for PoolValue<T>
-where
-    T: Clone,
-{
-    fn clone(&self) -> Self {
-        self.slot.pool().alloc(self.slot.value().clone().unwrap())
-    }
+    pub(crate) ptr: *mut T,
+    pub(crate) slots: *const UnsafeCell<Vec<Box<T>>>,
+    #[cfg(test)]
+    pub(crate) allocations: *mut usize,
 }
 
 impl<T> PoolValue<T> {
-    pub(crate) fn new(slot: Slot<T>) -> Self {
-        Self { slot }
-    }
-
-    pub fn take_value(&self) -> T {
-        self.slot.take_value()
-    }
-
-    pub fn take_boxed_value(&self) -> Box<T> {
-        Box::new(self.take_value())
+    pub fn take_value(&mut self) -> T {
+        let value = *unsafe { Box::from_raw(self.ptr) };
+        self.ptr = std::ptr::null_mut();
+        value
     }
 }
 
@@ -32,13 +22,16 @@ impl<T> Deref for PoolValue<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        self.slot.value().as_ref().unwrap()
+        unsafe { self.ptr.as_ref().unwrap_unchecked() }
     }
 }
 
-impl<T> DerefMut for PoolValue<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.slot.value_mut().as_mut().unwrap()
+impl<T> Clone for PoolValue<T>
+where
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        alloc_in(self.slots, allocations_ptr!(self), self.deref().clone())
     }
 }
 
@@ -62,7 +55,7 @@ where
 
 impl<T> PartialEq<&T> for PoolValue<T>
 where
-    T: PartialEq,
+    T: PartialEq + std::fmt::Debug,
 {
     fn eq(&self, other: &&T) -> bool {
         self.deref() == *other
@@ -71,7 +64,16 @@ where
 
 impl<T> Drop for PoolValue<T> {
     fn drop(&mut self) {
-        self.slot.take().recycle()
+        if !self.ptr.is_null() {
+            let ptr = self.ptr;
+            self.ptr = std::ptr::null_mut();
+            unsafe {
+                UnsafeCell::raw_get(self.slots)
+                    .as_mut()
+                    .unwrap_unchecked()
+                    .push(Box::from_raw(ptr))
+            }
+        }
     }
 }
 
@@ -81,11 +83,5 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.deref())
-    }
-}
-
-impl<T> AsRef<T> for PoolValue<T> {
-    fn as_ref(&self) -> &T {
-        self.slot.value().as_ref().unwrap()
     }
 }
